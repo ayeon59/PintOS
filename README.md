@@ -1,1 +1,1 @@
-# PinOS
+# PintOS
