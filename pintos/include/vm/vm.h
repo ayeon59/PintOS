@@ -1,6 +1,7 @@
 #ifndef VM_VM_H
 #define VM_VM_H
 #include <stdbool.h>
+#include "kernel/hash.h"
 #include "threads/palloc.h"
 #include "kernel/hash.h"
 
@@ -49,6 +50,7 @@ struct page {
 
 	/* 여러분이 구현할 부분 */
 	// [HERE] 1
+	struct hash_elem hash_elem;
 
 	/* 타입별 데이터는 union에 결합됨.
 	 * 각 함수는 현재 union 타입을 자동으로 판별함 */
@@ -66,6 +68,7 @@ struct page {
 struct frame {
 	void *kva;
 	struct page *page;
+	struct list_elem frame_elem;
 };
 
 /* 페이지 연산을 위한 함수 테이블.
@@ -84,10 +87,18 @@ struct page_operations {
 #define destroy(page) \
 	if ((page)->operations->destroy) (page)->operations->destroy (page)
 
+<<<<<<< HEAD
 /* 현재 프로세스의 메모리 공간 표현.
  * 이 구조체의 구체적인 설계를 강제하지 않음.
  * 설계는 전적으로 여러분에게 달려 있음. */
 struct supplemental_page_table {
+=======
+/* Representation of current process's memory space.
+ * We don't want to force you to obey any specific design for this struct.
+ * All designs up to you for this. */
+struct supplemental_page_table 
+{
+>>>>>>> main
 	// [HERE] 1
 	struct hash hash_table;
 };
