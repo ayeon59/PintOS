@@ -3,6 +3,7 @@
 #include "threads/malloc.h"
 #include "vm/vm.h"
 #include "vm/inspect.h"
+#include "threads/vaddr.h"
 
 /* Initializes the virtual memory subsystem by invoking each subsystem's
  * intialize codes. */
@@ -64,29 +65,47 @@ err:
 }
 
 /* Find VA from spt and return page. On error, return NULL. */
+// “가상 주소 va에 해당하는 page 구조체를 supplemental page table에서 찾아 리턴한다”
 struct page *
 spt_find_page (struct supplemental_page_table *spt UNUSED, void *va UNUSED) 
 {
-	struct page *page = NULL;
+	//struct page *page = NULL;
 	/* TODO: Fill this function. */
 	// [HERE] 1
 
-	return page;
+	struct page page;								  // 검색용 임시 페이지임(va를 찾기위한 key같은거)	
+    struct hash_elem *e;
+
+    page.va = pg_round_down(va);					  // va를 페이지 단위로 내림
+    e = hash_find(&spt->hash_table, &page.hash_elem); // 동일한 키를 가진 해쉬 검색
+
+    if (e == NULL)
+    {
+        return NULL;
+    }
+
+    return hash_entry(e, struct page, hash_elem);
 }
 
 /* Insert PAGE into spt with validation. */
 bool
 spt_insert_page (struct supplemental_page_table *spt UNUSED,
-		struct page *page UNUSED) {
+		struct page *page UNUSED)
+{
 	int succ = false;
 	/* TODO: Fill this function. */
 	// [HERE] 1
 
-	return succ;
+    if (hash_insert(&spt->hash_table, &page->hash_elem) == NULL)
+    {
+        succ = true;
+    }
+    return succ;
 }
 
 void
-spt_remove_page (struct supplemental_page_table *spt, struct page *page) {
+spt_remove_page (struct supplemental_page_table *spt, struct page *page) 
+{
 	vm_dealloc_page (page);
 	return true;
 }
@@ -182,21 +201,30 @@ vm_do_claim_page (struct page *page) {
 	return swap_in (page, frame->kva);
 }
 
-/* Initialize new supplemental page table */
-void
-supplemental_page_table_init (struct supplemental_page_table *spt UNUSED) 
-{
-	// [HERE] 1
-}
-
 uint64_t do_hash(const struct hash_elem *e, void *aux)
 {
     // [HERE] 1
+	struct page *p = hash_entry(e, struct page, hash_elem);
+    uintptr_t key = (uintptr_t) p->va;
+    return hash_bytes(&key, sizeof(p->va));
 }
 
 bool hash_less(const struct hash_elem *a, const struct hash_elem *b, void *aux)
 {
     // [HERE] 1
+	struct page *page_a = hash_entry(a, struct page, hash_elem);
+    struct page *page_b = hash_entry(b, struct page, hash_elem);
+
+    return (uintptr_t) page_a->va < (uintptr_t) page_b->va;
+}
+
+
+/* Initialize new supplemental page table */
+void
+supplemental_page_table_init (struct supplemental_page_table *spt UNUSED) 
+{
+	// [HERE] 1
+	hash_init(&spt->hash_table, do_hash, hash_less, NULL);
 }
 
 
