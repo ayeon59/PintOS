@@ -42,7 +42,8 @@ static struct frame *vm_evict_frame (void);
  * `vm_alloc_page`. */
 bool
 vm_alloc_page_with_initializer (enum vm_type type, void *upage, bool writable,
-		vm_initializer *init, void *aux) {
+		vm_initializer *init, void *aux) 
+{
 
 	ASSERT (VM_TYPE(type) != VM_UNINIT)
 
@@ -53,8 +54,10 @@ vm_alloc_page_with_initializer (enum vm_type type, void *upage, bool writable,
 		/* TODO: Create the page, fetch the initialier according to the VM type,
 		 * TODO: and then create "uninit" page struct by calling uninit_new. You
 		 * TODO: should modify the field after calling the uninit_new. */
-
 		/* TODO: Insert the page into the spt. */
+
+		// [HERE] 2
+
 	}
 err:
 	return false;
@@ -62,9 +65,11 @@ err:
 
 /* Find VA from spt and return page. On error, return NULL. */
 struct page *
-spt_find_page (struct supplemental_page_table *spt UNUSED, void *va UNUSED) {
+spt_find_page (struct supplemental_page_table *spt UNUSED, void *va UNUSED) 
+{
 	struct page *page = NULL;
 	/* TODO: Fill this function. */
+	// [HERE] 1
 
 	return page;
 }
@@ -75,6 +80,7 @@ spt_insert_page (struct supplemental_page_table *spt UNUSED,
 		struct page *page UNUSED) {
 	int succ = false;
 	/* TODO: Fill this function. */
+	// [HERE] 1
 
 	return succ;
 }
@@ -112,6 +118,7 @@ static struct frame *
 vm_get_frame (void) {
 	struct frame *frame = NULL;
 	/* TODO: Fill this function. */
+	// [HERE] 2
 
 	ASSERT (frame != NULL);
 	ASSERT (frame->page == NULL);
@@ -131,11 +138,13 @@ vm_handle_wp (struct page *page UNUSED) {
 /* Return true on success */
 bool
 vm_try_handle_fault (struct intr_frame *f UNUSED, void *addr UNUSED,
-		bool user UNUSED, bool write UNUSED, bool not_present UNUSED) {
+		bool user UNUSED, bool write UNUSED, bool not_present UNUSED) 
+{
 	struct supplemental_page_table *spt UNUSED = &thread_current ()->spt;
 	struct page *page = NULL;
 	/* TODO: Validate the fault */
 	/* TODO: Your code goes here */
+	// [HERE] 2
 
 	return vm_do_claim_page (page);
 }
@@ -153,6 +162,7 @@ bool
 vm_claim_page (void *va UNUSED) {
 	struct page *page = NULL;
 	/* TODO: Fill this function */
+	// [HERE] 2
 
 	return vm_do_claim_page (page);
 }
@@ -167,24 +177,47 @@ vm_do_claim_page (struct page *page) {
 	page->frame = frame;
 
 	/* TODO: Insert page table entry to map page's VA to frame's PA. */
+	// [HERE] 2
 
 	return swap_in (page, frame->kva);
 }
 
 /* Initialize new supplemental page table */
 void
-supplemental_page_table_init (struct supplemental_page_table *spt UNUSED) {
+supplemental_page_table_init (struct supplemental_page_table *spt UNUSED) 
+{
+	// [HERE] 1
 }
+
+uint64_t do_hash(const struct hash_elem *e, void *aux)
+{
+    // [HERE] 1
+}
+
+bool hash_less(const struct hash_elem *a, const struct hash_elem *b, void *aux)
+{
+    // [HERE] 1
+}
+
 
 /* Copy supplemental page table from src to dst */
 bool
 supplemental_page_table_copy (struct supplemental_page_table *dst UNUSED,
-		struct supplemental_page_table *src UNUSED) {
+		struct supplemental_page_table *src UNUSED) 
+{
+	// [HERE] 3
+}
+
+void hash_kill(struct hash_elem *e, void *aux)
+{
+    // [HERE] 3
 }
 
 /* Free the resource hold by the supplemental page table */
 void
-supplemental_page_table_kill (struct supplemental_page_table *spt UNUSED) {
+supplemental_page_table_kill (struct supplemental_page_table *spt UNUSED) 
+{
 	/* TODO: Destroy all the supplemental_page_table hold by thread and
 	 * TODO: writeback all the modified contents to the storage. */
+	// [HERE] 3
 }
