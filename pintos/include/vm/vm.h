@@ -2,6 +2,8 @@
 #define VM_VM_H
 #include <stdbool.h>
 #include "threads/palloc.h"
+#include "kernel/hash.h"
+
 
 enum vm_type {
 	/* 초기화되지 않은 페이지 */
@@ -87,6 +89,7 @@ struct page_operations {
  * 설계는 전적으로 여러분에게 달려 있음. */
 struct supplemental_page_table {
 	// [HERE] 1
+	struct hash hash_table;
 };
 
 #include "threads/thread.h"

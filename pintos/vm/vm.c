@@ -3,8 +3,6 @@
 #include "threads/malloc.h"
 #include "vm/vm.h"
 #include "vm/inspect.h"
-#include "hash.h"
-
 /* 각 하위 서브시스템의 초기화 코드를 호출하여
  * 가상 메모리 서브시스템을 초기화한다. */
 void
@@ -190,8 +188,10 @@ supplemental_page_table_init (struct supplemental_page_table *spt UNUSED)
 	// [HERE] 1
 	/* 컨테이너 준비 */
 	struct hash_elem *e, *a, *b;
-	void *aux;
-	bool hash_succ = hash_init(&spt->table, do_hash(e,aux), hash_less(a,b,aux), aux);
+	void *aux; 
+	bool hash_succ;
+	
+	hash_succ = hash_init(&spt->hash_table, do_hash(e,aux), hash_less(a,b,aux), NULL);
 	if(!hash_succ) return -1;
 
 
