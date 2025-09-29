@@ -118,6 +118,7 @@ struct thread {
 #ifdef VM
     /* 이 스레드가 소유한 전체 가상 메모리를 추적하는 보조 페이지 테이블 */
     struct supplemental_page_table spt;
+    void *rsp;
 #endif
 
     /* thread.c에서 관리 */

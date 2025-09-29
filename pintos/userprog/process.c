@@ -1012,10 +1012,32 @@ install_page (void *upage, void *kpage, bool writable) {
  * 프로젝트 2에 대해서만 함수를 구현하려면 위쪽 블록에서 구현하라. */
 
 static bool
-lazy_load_segment (struct page *page, void *aux) {
+lazy_load_segment (struct page *page, void *aux) 
+{
 	/* TODO: 파일에서 세그먼트를 로드한다 */
 	/* TODO: 이 함수는 주소 VA에서 첫 페이지 폴트가 발생했을 때 호출된다. */
 	/* TODO: 이 함수를 호출할 때 VA는 사용 가능하다. */
+
+	struct lazy_load_info *load_info = (struct lazy_load_info *) aux;
+
+    struct file *file_to_load = load_info->file_to_load;
+    off_t ofs = load_info->ofs;
+    size_t page_read_bytes = load_info->page_read_bytes;
+    size_t page_zero_bytes = PGSIZE - page_read_bytes;
+
+    file_seek(file_to_load, ofs);
+
+    /* 이 페이지를 로드한다. */
+    if (file_read(file_to_load, page->frame->kva, page_read_bytes) !=
+        (int) page_read_bytes)
+    {
+        palloc_free_page(page->frame->kva);
+        return false;
+    }
+    memset(page->frame->kva + page_read_bytes, 0, page_zero_bytes);
+
+    return true;
+
 }
 
 /* FILE의 OFS 오프셋에서 시작하는 세그먼트를 주소 UPAGE에 로드한다.
@@ -1031,7 +1053,8 @@ lazy_load_segment (struct page *page, void *aux) {
  * 성공 시 true, 메모리 할당 오류 또는 디스크 읽기 오류 시 false를 반환한다. */
 static bool
 load_segment (struct file *file, off_t ofs, uint8_t *upage,
-		uint32_t read_bytes, uint32_t zero_bytes, bool writable) {
+		uint32_t read_bytes, uint32_t zero_bytes, bool writable) 
+{
 	ASSERT ((read_bytes + zero_bytes) % PGSIZE == 0);
 	ASSERT (pg_ofs (upage) == 0);
 	ASSERT (ofs % PGSIZE == 0);
@@ -1044,7 +1067,11 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 		size_t page_zero_bytes = PGSIZE - page_read_bytes;
 
 		/* TODO: lazy_load_segment에 정보를 전달하기 위해 aux를 설정한다. */
-		void *aux = NULL;
+		struct lazy_load_info *aux = malloc(sizeof(struct lazy_load_info));
+        aux->file_to_load = file;
+        aux->ofs = ofs;
+        aux->page_read_bytes = page_read_bytes;
+
 		if (!vm_alloc_page_with_initializer (VM_ANON, upage,
 					writable, lazy_load_segment, aux))
 			return false;
@@ -1053,6 +1080,8 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 		read_bytes -= page_read_bytes;
 		zero_bytes -= page_zero_bytes;
 		upage += PGSIZE;
+
+		ofs = ofs + page_read_bytes;
 	}
 	return true;
 }
@@ -1068,6 +1097,16 @@ setup_stack (struct intr_frame *if_) {
 	 * TODO: 해당 페이지를 스택으로 표시해야 한다. */
 	/* TODO: 여기에 코드를 작성하라 */
 
-	return success;
+	if (vm_alloc_page(VM_ANON | VM_MARKER_0, stack_bottom, true))
+    {
+        if (vm_claim_page(stack_bottom))
+        {
+            success = true;
+            /* 성공했다면 rsp를 그에 맞게 설정한다. */
+            if_->rsp = USER_STACK;
+        }
+    }
+
+    return success;
 }
 #endif /* VM */

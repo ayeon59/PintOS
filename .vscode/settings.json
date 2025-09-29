@@ -19,6 +19,7 @@
         "string_view": "c",
         "gdt.h": "c",
         "syscall-nr.h": "c",
-        "off_t.h": "c"
+        "off_t.h": "c",
+        "anon.h": "c"
     }
 }
