@@ -150,11 +150,19 @@ static struct frame *
 vm_get_frame (void) 
 {
 	struct frame *frame = NULL;
+	frame = malloc(sizeof(frame));
+
 	/* TODO: Fill this function. */
 	// [HERE] 2
 
+	void *kva = palloc_get_page(PAL_USER);
+	if(kva == NULL) return -1;
+	frame->kva = kva;
+
 	ASSERT (frame != NULL);
 	ASSERT (frame->page == NULL);
+
+	list_push_back(&frame_table,&frame->frame_elem);
 	return frame;
 }
 
