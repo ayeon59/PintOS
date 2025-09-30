@@ -7,7 +7,6 @@
 #include "threads/synch.h"
 
 struct lock hash_lock;
-struct lock frame_lock;
 struct list frame_table;
 
 /* Initializes the virtual memory subsystem by invoking each subsystem's
@@ -18,7 +17,6 @@ vm_init (void) {
 	vm_file_init ();
 
 	lock_init(&hash_lock);
-	lock_init(&frame_lock);
 	list_init(&frame_table);
 
 #ifdef EFILESYS  /* For project 4 */
@@ -152,21 +150,19 @@ static struct frame *
 vm_get_frame (void) 
 {
 	struct frame *frame = NULL;
-	frame = malloc(sizeof(frame));
 
 	/* TODO: Fill this function. */
 	// [HERE] 2
 
 	void *kva = palloc_get_page(PAL_USER);
-	if(kva == NULL) return -1;
+	if(kva == NULL) {PANIC("kernel panic");
+	} else{frame = malloc(sizeof(frame));
+    }
 	frame->kva = kva;
 
 	ASSERT (frame != NULL);
 	ASSERT (frame->page == NULL);
 
-	lock_acquire(&frame_lock);
-	list_push_back(&frame_table,&frame->frame_elem);
-	lock_release(&frame_lock);
 	return frame;
 }
 

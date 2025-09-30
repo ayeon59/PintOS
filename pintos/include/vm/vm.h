@@ -67,7 +67,6 @@ struct frame {
 	void *kva;
 	struct page *page;
 	struct list_elem frame_elem;
-	struct lock frame_lock;
 };
 
 /* The function table for page operations.
