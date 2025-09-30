@@ -74,6 +74,7 @@ err:
 
 /* Find VA from spt and return page. On error, return NULL. */
 
+
 struct page *
 spt_find_page (struct supplemental_page_table *spt UNUSED, void *va UNUSED) 
 {
@@ -156,7 +157,7 @@ vm_get_frame (void)
 
 	void *kva = palloc_get_page(PAL_USER);
 	if(kva == NULL) {PANIC("kernel panic");
-	} else{frame = malloc(sizeof(frame));
+	} else {frame = malloc(sizeof(frame));
     }
 	frame->kva = kva;
 
