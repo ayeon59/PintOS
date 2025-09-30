@@ -9,7 +9,6 @@
 struct lock hash_lock;
 struct list frame_table;
 
-
 /* Initializes the virtual memory subsystem by invoking each subsystem's
  * intialize codes. */
 void
@@ -87,8 +86,7 @@ spt_find_page (struct supplemental_page_table *spt UNUSED, void *va UNUSED)
 	struct hash_elem *e = hash_find(&spt->hash_table, &page.hash_elem);
 	
 	if (!e) return NULL;
-	//실제 page의 연결고리와 바깥 구조체 타입, 필드이름 넘겨서
-	//실제 페이지 객체로 변환하는 것
+
 	return hash_entry(e, struct page, hash_elem);
 }
 
@@ -100,8 +98,7 @@ spt_insert_page (struct supplemental_page_table *spt,
     bool succ = false;
 
 	lock_acquire(&hash_lock);
-	//null 포인터를 반환 받으면 성공한 것
-	//이미 값이 있는 경우에 값을 반환하기 때문에 NULL이 아니면 실패한 것
+
     if (hash_insert(&spt->hash_table, &page->hash_elem) == NULL)
     {
         succ = true;
@@ -200,9 +197,11 @@ vm_claim_page (void *va UNUSED) {
 	struct page *page = NULL;
 	/* TODO: Fill this function */
 	// [HERE] 2
+  
 	page = spt_find_page(&thread_current()->spt, va);
     if (page == NULL)
         return false;
+
 
 	return vm_do_claim_page (page);
 }
@@ -211,7 +210,7 @@ vm_claim_page (void *va UNUSED) {
 static bool
 vm_do_claim_page (struct page *page) 
 {
-	//새 물리 페이지를 하나 받아서
+
 	struct frame *frame = vm_get_frame();
 	if (frame == NULL) return false;
 
@@ -223,9 +222,9 @@ vm_do_claim_page (struct page *page)
 	
 	/* TODO: Insert page table entry to map page's VA to frame's PA. */
 	// [HERE] 2
-
 	if (!pml4_set_page(thread_current()->pml4, page->va, frame->kva, page->writable))
     	return false;
+
 
 	return swap_in (page, frame->kva);
 }
@@ -235,7 +234,6 @@ uint64_t do_hash(const struct hash_elem *e, void *aux)
     // [HERE] 1
 	struct page *p = hash_entry(e, struct page, hash_elem); 
 
-	//여기서 파라미터로 전해 받은 va랑 같은 버킷리스트를 찾아 내는 것
 	return hash_bytes(&p->va, sizeof(p->va));  
 }
 
@@ -254,7 +252,7 @@ void
 supplemental_page_table_init (struct supplemental_page_table *spt UNUSED) 
 {
 	// [HERE] 1
-	// 여기서 hash_less, do_hash 넘김
+
 	hash_init(&spt->hash_table, do_hash, hash_less, NULL);
 }
 
