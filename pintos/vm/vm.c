@@ -7,6 +7,7 @@
 #include "threads/synch.h"
 
 struct lock hash_lock;
+struct lock frame_lock;
 struct list frame_table;
 
 /* Initializes the virtual memory subsystem by invoking each subsystem's
@@ -17,6 +18,7 @@ vm_init (void) {
 	vm_file_init ();
 
 	lock_init(&hash_lock);
+	lock_init(&frame_lock);
 	list_init(&frame_table);
 
 #ifdef EFILESYS  /* For project 4 */
@@ -162,7 +164,9 @@ vm_get_frame (void)
 	ASSERT (frame != NULL);
 	ASSERT (frame->page == NULL);
 
+	lock_acquire(&frame_lock);
 	list_push_back(&frame_table,&frame->frame_elem);
+	lock_release(&frame_lock);
 	return frame;
 }
 
