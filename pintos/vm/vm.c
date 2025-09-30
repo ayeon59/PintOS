@@ -7,6 +7,7 @@
 #include "threads/synch.h"
 
 struct lock hash_lock;
+struct lock frame_lock;
 struct list frame_table;
 
 /* Initializes the virtual memory subsystem by invoking each subsystem's
@@ -155,8 +156,11 @@ vm_get_frame (void)
     // [HERE] 2
 
     void *kva = palloc_get_page(PAL_USER);
-    if(kva == NULL) {PANIC("kernel panic");
-    } else {frame = malloc(sizeof(frame));
+    if(kva == NULL) {
+		PANIC("kernel panic");
+    } 
+	else {
+		frame = malloc(sizeof(frame));
     }
     frame->kva = kva;
 
@@ -228,13 +232,21 @@ vm_do_claim_page (struct page *page)
 	//가상 메모리에 물리 프레임 연결
 	page->frame = frame;
 	
+
 	/* TODO: Insert page table entry to map page's VA to frame's PA. */
 	// [HERE] 2
 	if (!pml4_set_page(thread_current()->pml4, page->va, frame->kva, page->writable))
     	return false;
 
+	if (!swap_in(page, frame->kva))
+        return false;
 
-	return swap_in (page, frame->kva);
+    
+    lock_acquire(&frame_lock);
+    list_push_back(&frame_table, &frame->elem);
+    lock_release(&frame_lock);
+
+    return true;
 }
 
 uint64_t do_hash(const struct hash_elem *e, void *aux)
