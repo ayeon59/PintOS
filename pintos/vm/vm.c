@@ -74,7 +74,6 @@ err:
 
 /* Find VA from spt and return page. On error, return NULL. */
 
-
 struct page *
 spt_find_page (struct supplemental_page_table *spt UNUSED, void *va UNUSED) 
 {
@@ -87,7 +86,7 @@ spt_find_page (struct supplemental_page_table *spt UNUSED, void *va UNUSED)
 	struct hash_elem *e = hash_find(&spt->hash_table, &page.hash_elem);
 	
 	if (!e) return NULL;
-	
+
 	return hash_entry(e, struct page, hash_elem);
 }
 
@@ -150,21 +149,21 @@ vm_evict_frame (void) {
 static struct frame *
 vm_get_frame (void) 
 {
-	struct frame *frame = NULL;
+    struct frame *frame = NULL;
 
-	/* TODO: Fill this function. */
-	// [HERE] 2
+    /* TODO: Fill this function. */
+    // [HERE] 2
 
-	void *kva = palloc_get_page(PAL_USER);
-	if(kva == NULL) {PANIC("kernel panic");
-	} else {frame = malloc(sizeof(frame));
+    void *kva = palloc_get_page(PAL_USER);
+    if(kva == NULL) {PANIC("kernel panic");
+    } else {frame = malloc(sizeof(frame));
     }
-	frame->kva = kva;
+    frame->kva = kva;
 
-	ASSERT (frame != NULL);
-	ASSERT (frame->page == NULL);
+    ASSERT (frame != NULL);
+    ASSERT (frame->page == NULL);
 
-	return frame;
+    return frame;
 }
 
 /* Growing the stack. */
@@ -200,11 +199,17 @@ vm_dealloc_page (struct page *page) {
 }
 
 /* Claim the page that allocate on VA. */
+
 bool
 vm_claim_page (void *va UNUSED) {
 	struct page *page = NULL;
 	/* TODO: Fill this function */
 	// [HERE] 2
+  
+	page = spt_find_page(&thread_current()->spt, va);
+    if (page == NULL)
+        return false;
+
 
 	return vm_do_claim_page (page);
 }
@@ -213,14 +218,21 @@ vm_claim_page (void *va UNUSED) {
 static bool
 vm_do_claim_page (struct page *page) 
 {
-	struct frame *frame = vm_get_frame ();
+
+	struct frame *frame = vm_get_frame();
+	if (frame == NULL) return false;
 
 	/* Set links */
+	//물리 프레임에 가상 페이지를 연결
 	frame->page = page;
+	//가상 메모리에 물리 프레임 연결
 	page->frame = frame;
-
+	
 	/* TODO: Insert page table entry to map page's VA to frame's PA. */
 	// [HERE] 2
+	if (!pml4_set_page(thread_current()->pml4, page->va, frame->kva, page->writable))
+    	return false;
+
 
 	return swap_in (page, frame->kva);
 }
@@ -229,6 +241,7 @@ uint64_t do_hash(const struct hash_elem *e, void *aux)
 {
     // [HERE] 1
 	struct page *p = hash_entry(e, struct page, hash_elem); 
+
 	return hash_bytes(&p->va, sizeof(p->va));  
 }
 
@@ -247,6 +260,7 @@ void
 supplemental_page_table_init (struct supplemental_page_table *spt UNUSED) 
 {
 	// [HERE] 1
+
 	hash_init(&spt->hash_table, do_hash, hash_less, NULL);
 }
 
