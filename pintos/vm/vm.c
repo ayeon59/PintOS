@@ -59,8 +59,11 @@ vm_alloc_page_with_initializer (enum vm_type type, void *upage, bool writable,
 
 	struct supplemental_page_table *spt = &thread_current ()->spt;
 
+	bool *initializer = NULL;
+
 	/* Check wheter the upage is already occupied or not. */
-	if (spt_find_page (spt, upage) == NULL) {
+	if (spt_find_page (spt, upage) == NULL) 
+	{
 		/* TODO: Create the page, fetch the initialier according to the VM type,
 		 * TODO: and then create "uninit" page struct by calling uninit_new. You
 		 * TODO: should modify the field after calling the uninit_new. */
@@ -68,7 +71,23 @@ vm_alloc_page_with_initializer (enum vm_type type, void *upage, bool writable,
 
 		// [HERE] 2
 
+		struct page *temp_page = (struct page *)malloc(sizeof(struct page));//va 만들어주고.
+		if (temp_page == NULL) goto err;
+		
+		bool (*initializer[4])(struct page *page, enum vm_type type, void *kva);
+		initializer[0] = NULL;
+		initializer[1] = anon_initializer;
+		initializer[2] = file_backed_initializer;
+		initializer[3] = NULL;
+
+		uninit_new(temp_page,upage,init,type,aux,initializer[VM_TYPE(type)]);
+		temp_page->writable = writable;
+
+		if(spt_insert_page(spt,temp_page))return true;
+		free(temp_page);
 	}
+	else goto err;
+
 err:
 	return false;
 }
@@ -78,13 +97,16 @@ err:
 struct page *
 spt_find_page (struct supplemental_page_table *spt UNUSED, void *va UNUSED) 
 {
-	struct page page;	
+
+	struct page *page = malloc(sizeof(struct page)) ;	
 	/* TODO: Fill this function. */
 	// [HERE] 1
 
-	page.va =pg_round_down(va); 
+	page->va =pg_round_down(va); 
 
-	struct hash_elem *e = hash_find(&spt->hash_table, &page.hash_elem);
+
+	struct hash_elem *e = hash_find(&spt->hash_table, &page->hash_elem);
+	free(page);
 	
 	if (!e) return NULL;
 
@@ -157,12 +179,20 @@ vm_get_frame (void)
 
     void *kva = palloc_get_page(PAL_USER);
     if(kva == NULL) {
-		PANIC("kernel panic");
+
+		PANIC("vm_get_frame: kva is NULL");
     } 
-	else {
+	else 
+	{
 		frame = malloc(sizeof(frame));
+		if (frame == NULL)
+		{
+			PANIC("vm_get_frame: frame is NULL");
+		}
     }
+
     frame->kva = kva;
+	frame->page = NULL;
 
     ASSERT (frame != NULL);
     ASSERT (frame->page == NULL);
@@ -190,6 +220,13 @@ vm_try_handle_fault (struct intr_frame *f UNUSED, void *addr UNUSED,
 	/* TODO: Validate the fault */
 	/* TODO: Your code goes here */
 	// [HERE] 2
+
+	if (addr == NULL||is_kernel_vaddr(addr))
+    	return false;
+	page = spt_find_page(spt, addr);
+	if (page == NULL) {
+		return false;
+	}
 
 	return vm_do_claim_page (page);
 }
@@ -241,12 +278,26 @@ vm_do_claim_page (struct page *page)
 	if (!swap_in(page, frame->kva))
         return false;
 
-    
-    lock_acquire(&frame_lock);
-    list_push_back(&frame_table, &frame->elem);
-    lock_release(&frame_lock);
 
-    return true;
+	if(pml4_get_page(thread_current()->pml4, page->va) == NULL)
+	{
+		if (!pml4_set_page(thread_current()->pml4, page->va, frame->kva, page->writable))
+    		return false;
+	}
+	
+
+	// 여기에서 뭔가 에러가 남 원인 파악 부탁
+
+	//if (!swap_in(page, frame->kva)) return false;
+    
+    //lock_acquire(&frame_lock);
+    //list_push_back(&frame_table, &frame->frame_elem);
+    //lock_release(&frame_lock);
+
+    //return true;
+
+	return swap_in (page, frame->kva); // 임시 땜빵
+
 }
 
 uint64_t do_hash(const struct hash_elem *e, void *aux)

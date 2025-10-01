@@ -1018,6 +1018,29 @@ lazy_load_segment (struct page *page, void *aux)
 	/* TODO: 이 함수는 주소 VA에서 첫 페이지 폴트가 발생했을 때 호출된다. */
 	/* TODO: 이 함수를 호출할 때 VA는 사용 가능하다. */
 	// [HERE] 2
+
+	struct lazy_load_info *info = (struct lazy_load_info *) aux;
+	void * kva = page->frame->kva;
+
+	off_t offset = info->offset;
+	size_t page_read_bytes = info->read_bytes;
+	size_t page_zero_bytes = info->zero_bytes;
+
+
+	lock_acquire(&filesys_lock);
+
+	file_seek (info->file, offset);
+
+	if (file_read_at(info->file, kva, page_read_bytes, offset) != (int)page_read_bytes)
+	{
+		lock_release(&filesys_lock);
+		return false;
+	}
+
+	memset(kva + page_read_bytes, 0, page_zero_bytes);
+	lock_release(&filesys_lock);
+	return true;
+
 }
 
 /* FILE의 OFS 오프셋에서 시작하는 세그먼트를 주소 UPAGE에 로드한다.
@@ -1039,7 +1062,8 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 	ASSERT (pg_ofs (upage) == 0);
 	ASSERT (ofs % PGSIZE == 0);
 
-	while (read_bytes > 0 || zero_bytes > 0) {
+	while (read_bytes > 0 || zero_bytes > 0) 
+	{
 		/* 이 페이지를 어떻게 채울지 계산한다.
 		 * FILE에서 PAGE_READ_BYTES 바이트를 읽고
 		 * 마지막 PAGE_ZERO_BYTES 바이트를 0으로 채운다. */
@@ -1048,8 +1072,16 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 
 		/* TODO: lazy_load_segment에 정보를 전달하기 위해 aux를 설정한다. */
 		// [HERE] 2
-		void *aux = NULL;
-		if (!vm_alloc_page_with_initializer (VM_ANON, upage,
+		struct lazy_load_info *aux = malloc(sizeof(struct lazy_load_info));
+		if (aux == NULL) return false;
+
+		aux->file = file;
+		aux->offset = ofs;
+		aux->read_bytes = page_read_bytes;
+		aux->zero_bytes = page_zero_bytes;
+
+		// VM_ANON -> VM_FILE
+		if (!vm_alloc_page_with_initializer (VM_FILE, upage,
 					writable, lazy_load_segment, aux))
 			return false;
 
@@ -1057,6 +1089,8 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 		read_bytes -= page_read_bytes;
 		zero_bytes -= page_zero_bytes;
 		upage += PGSIZE;
+
+		ofs+= page_read_bytes;
 	}
 	return true;
 }
@@ -1074,6 +1108,16 @@ setup_stack (struct intr_frame *if_)
 	/* TODO: 여기에 코드를 작성하라 */
 	// [HERE] 2
 
+	if (vm_alloc_page(VM_FILE | VM_MARKER_0, stack_bottom, true)) 
+	{
+		if (vm_claim_page(stack_bottom)) 
+		{
+			if_->rsp = USER_STACK;
+			success = true;
+		}
+	}
+
 	return success;
 }
 #endif /* VM */
+

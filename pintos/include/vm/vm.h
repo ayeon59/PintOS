@@ -95,6 +95,15 @@ struct supplemental_page_table
 	struct hash hash_table;
 };
 
+// lazy_loading 메타데이터
+struct lazy_load_info 
+{
+	struct file *file;
+	off_t offset;
+	size_t read_bytes;
+	size_t zero_bytes;
+};
+
 #include "threads/thread.h"
 void supplemental_page_table_init (struct supplemental_page_table *spt);
 bool supplemental_page_table_copy (struct supplemental_page_table *dst,
