@@ -97,11 +97,13 @@ err:
 struct page *
 spt_find_page (struct supplemental_page_table *spt UNUSED, void *va UNUSED) 
 {
+
 	struct page *page = malloc(sizeof(struct page)) ;	
 	/* TODO: Fill this function. */
 	// [HERE] 1
 
 	page->va =pg_round_down(va); 
+
 
 	struct hash_elem *e = hash_find(&spt->hash_table, &page->hash_elem);
 	free(page);
@@ -177,6 +179,7 @@ vm_get_frame (void)
 
     void *kva = palloc_get_page(PAL_USER);
     if(kva == NULL) {
+
 		PANIC("vm_get_frame: kva is NULL");
     } 
 	else 
@@ -269,6 +272,12 @@ vm_do_claim_page (struct page *page)
 
 	/* TODO: Insert page table entry to map page's VA to frame's PA. */
 	// [HERE] 2
+	if (!pml4_set_page(thread_current()->pml4, page->va, frame->kva, page->writable))
+    	return false;
+
+	if (!swap_in(page, frame->kva))
+        return false;
+
 
 	if(pml4_get_page(thread_current()->pml4, page->va) == NULL)
 	{
@@ -288,6 +297,7 @@ vm_do_claim_page (struct page *page)
     //return true;
 
 	return swap_in (page, frame->kva); // 임시 땜빵
+
 }
 
 uint64_t do_hash(const struct hash_elem *e, void *aux)
