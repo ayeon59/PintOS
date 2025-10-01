@@ -6,8 +6,8 @@
 #include "threads/vaddr.h"
 #include "threads/synch.h"
 
-// Project3
 struct lock hash_lock;
+struct lock frame_lock;
 struct list frame_table;
 
 /* Initializes the virtual memory subsystem by invoking each subsystem's
@@ -93,29 +93,21 @@ err:
 }
 
 /* Find VA from spt and return page. On error, return NULL. */
-// “가상 주소 va에 해당하는 page 구조체를 supplemental page table에서 찾아 리턴한다”
+
 struct page *
 spt_find_page (struct supplemental_page_table *spt UNUSED, void *va UNUSED) 
 {
-<<<<<<< Updated upstream
-	struct page page;	// 걍 va 탐색용 임시 페이지임
-	/* TODO: Fill this function. */
-	// [HERE] 1
-
-	page.va =pg_round_down(va); // 페이지 단위로 정렬
-=======
 	struct page *page = malloc(sizeof(struct page)) ;	
 	/* TODO: Fill this function. */
 	// [HERE] 1
 
 	page->va =pg_round_down(va); 
->>>>>>> Stashed changes
 
 	struct hash_elem *e = hash_find(&spt->hash_table, &page->hash_elem);
 	free(page);
 	
 	if (!e) return NULL;
-	
+
 	return hash_entry(e, struct page, hash_elem);
 }
 
@@ -178,15 +170,8 @@ vm_evict_frame (void) {
 static struct frame *
 vm_get_frame (void) 
 {
-	struct frame *frame = NULL;
-	/* TODO: Fill this function. */
-	// [HERE] 2
+    struct frame *frame = NULL;
 
-<<<<<<< Updated upstream
-	ASSERT (frame != NULL);
-	ASSERT (frame->page == NULL);
-	return frame;
-=======
     /* TODO: Fill this function. */
     // [HERE] 2
 
@@ -210,7 +195,6 @@ vm_get_frame (void)
     ASSERT (frame->page == NULL);
 
     return frame;
->>>>>>> Stashed changes
 }
 
 /* Growing the stack. */
@@ -253,11 +237,17 @@ vm_dealloc_page (struct page *page) {
 }
 
 /* Claim the page that allocate on VA. */
+
 bool
 vm_claim_page (void *va UNUSED) {
 	struct page *page = NULL;
 	/* TODO: Fill this function */
 	// [HERE] 2
+  
+	page = spt_find_page(&thread_current()->spt, va);
+    if (page == NULL)
+        return false;
+
 
 	return vm_do_claim_page (page);
 }
@@ -266,18 +256,20 @@ vm_claim_page (void *va UNUSED) {
 static bool
 vm_do_claim_page (struct page *page) 
 {
-	struct frame *frame = vm_get_frame ();
+
+	struct frame *frame = vm_get_frame();
+	if (frame == NULL) return false;
 
 	/* Set links */
+	//물리 프레임에 가상 페이지를 연결
 	frame->page = page;
+	//가상 메모리에 물리 프레임 연결
 	page->frame = frame;
+	
 
 	/* TODO: Insert page table entry to map page's VA to frame's PA. */
 	// [HERE] 2
 
-<<<<<<< Updated upstream
-	return swap_in (page, frame->kva);
-=======
 	if(pml4_get_page(thread_current()->pml4, page->va) == NULL)
 	{
 		if (!pml4_set_page(thread_current()->pml4, page->va, frame->kva, page->writable))
@@ -296,14 +288,14 @@ vm_do_claim_page (struct page *page)
     //return true;
 
 	return swap_in (page, frame->kva); // 임시 땜빵
->>>>>>> Stashed changes
 }
 
 uint64_t do_hash(const struct hash_elem *e, void *aux)
 {
     // [HERE] 1
-	struct page *p = hash_entry(e, struct page, hash_elem);  // hash_elem -> struct page
-	return hash_bytes(&p->va, sizeof(p->va));  // va를 기준으로 해시값 생성
+	struct page *p = hash_entry(e, struct page, hash_elem); 
+
+	return hash_bytes(&p->va, sizeof(p->va));  
 }
 
 bool hash_less(const struct hash_elem *a, const struct hash_elem *b, void *aux)
@@ -321,6 +313,7 @@ void
 supplemental_page_table_init (struct supplemental_page_table *spt UNUSED) 
 {
 	// [HERE] 1
+
 	hash_init(&spt->hash_table, do_hash, hash_less, NULL);
 }
 
