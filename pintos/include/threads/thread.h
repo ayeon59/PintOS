@@ -11,9 +11,9 @@ struct file;
 struct child_process;
 #endif
 
-#ifdef VM
+//#ifdef VM
 #include "vm/vm.h"
-#endif
+//#endif
 
 /* 스레드 생애주기 상태 집합 */
 enum thread_status {
@@ -115,10 +115,10 @@ struct thread {
     int exit_status;                /* 사용자 프로그램 종료코드 보관용  */
 
 // #endif
-#ifdef VM
+//#ifdef VM
     /* 이 스레드가 소유한 전체 가상 메모리를 추적하는 보조 페이지 테이블 */
     struct supplemental_page_table spt;
-#endif
+//#endif
 
     /* thread.c에서 관리 */
     struct intr_frame tf; /* 문맥 전환을 위한 레지스터/세그먼트 스냅샷 저장 영역 */
