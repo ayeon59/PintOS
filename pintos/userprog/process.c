@@ -539,6 +539,8 @@ int process_exec(void *f_name) {
      * - 기존 주소 공간/리소스 파괴(유저 공간 해제) */
     process_cleanup();
 
+	supplemental_page_table_init(&thread_current()->spt);
+
     /* 그 다음 바이너리를 로드합니다.
      * - load()는 ELF를 검사하고, 세그먼트를 매핑하고, 초기 스택을 구성합니다. */
     // 파싱한 인자 중 첫 번째 항목인 프로그램 이름을 넘겨 ELF 실행 파일을 로드하고
