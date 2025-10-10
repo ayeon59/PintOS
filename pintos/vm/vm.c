@@ -336,8 +336,8 @@ supplemental_page_table_init (struct supplemental_page_table *spt UNUSED)
 
 /* Copy supplemental page table from src to dst */
 bool
-supplemental_page_table_copy (struct supplemental_page_table *dst UNUSED,
-		struct supplemental_page_table *src UNUSED) 
+supplemental_page_table_copy (struct supplemental_page_table *dst,
+		struct supplemental_page_table *src) 
 {
 	// [HERE] 3
 	struct hash_iterator *i;
@@ -346,20 +346,32 @@ supplemental_page_table_copy (struct supplemental_page_table *dst UNUSED,
 	while(hash_next(&i)){
 		// 물리 메모리 공간 확보
 		struct page *dst_page = palloc_get_page(PAL_USER);
+		if(dst_page == NULL){
+			return false;
+			break;	
+		}
 
 		// 부모 hash의 내용 복사
-		memcpy(dst->hash_table,src->hash_table,sizeof(src->hash_table));
+		memcpy(dst->hash_table, src->hash_table,sizeof(src->hash_table));
+		if(sizeof(dst->hash_table) == 0){
+			return false;
+			break;
+		}
 
 		// va-pa 매핑
 		struct page *src_page = hash_entry(hash_cur(&i), struct page, hash_elem);
 		void *upage = src_page -> va;
 		bool rw = src_page->writable;
-		pml4_set_page(thread_current()->pml4, upage, dst_page, rw);
+		bool succ = pml4_set_page(thread_current()->pml4, upage, dst_page, rw);
+		if(!succ){
+			return false;
+			break;
+		}
 
 		// spt에 삽입
 		hash_insert(&dst->hash_table, &dst_page->hash_elem);
 	}
-	
+	return true;
 }
 
 void hash_kill(struct hash_elem *e, void *aux)
