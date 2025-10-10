@@ -340,6 +340,26 @@ supplemental_page_table_copy (struct supplemental_page_table *dst UNUSED,
 		struct supplemental_page_table *src UNUSED) 
 {
 	// [HERE] 3
+	struct hash_iterator *i;
+	hash_first(&i,&src->hash_table);
+	// 순회 시작
+	while(hash_next(&i)){
+		// 물리 메모리 공간 확보
+		struct page *dst_page = palloc_get_page(PAL_USER);
+
+		// 부모 hash의 내용 복사
+		memcpy(dst->hash_table,src->hash_table,sizeof(src->hash_table));
+
+		// va-pa 매핑
+		struct page *src_page = hash_entry(hash_cur(&i), struct page, hash_elem);
+		void *upage = src_page -> va;
+		bool rw = src_page->writable;
+		pml4_set_page(thread_current()->pml4, upage, dst_page, rw);
+
+		// spt에 삽입
+		hash_insert(&dst->hash_table, &dst_page->hash_elem);
+	}
+	
 }
 
 void hash_kill(struct hash_elem *e, void *aux)
